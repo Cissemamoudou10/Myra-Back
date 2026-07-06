@@ -1,0 +1,16 @@
+// Type de peau : sèche, grasse, mixte, sensible, normale, tous types…
+// Relation plusieurs-à-plusieurs avec Produit.
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
+
+const TypePeau = sequelize.define(
+  "TypePeau",
+  {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    nom: { type: DataTypes.STRING, allowNull: false, unique: true },
+    image_url: { type: DataTypes.STRING, allowNull: true },
+  },
+  { tableName: "types_peau" }
+);
+
+export default TypePeau;
