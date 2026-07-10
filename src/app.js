@@ -21,7 +21,18 @@ const app = express();
 // CORS : autorise le front
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      const allowedOrigins = process.env.FRONTEND_URL 
+        ? process.env.FRONTEND_URL.split(',').map(u => u.trim())
+        : ["http://localhost:5173", "http://localhost:5174"];
+      
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS policy violation"));
+      }
+    },
     credentials: true,
   })
 );
