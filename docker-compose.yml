@@ -20,15 +20,8 @@ services:
     restart: always
     depends_on:
       - db
-    environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - DB_HOST=db
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-password}
-      - DB_NAME=${DB_NAME:-myra_db}
-      - JWT_SECRET=${JWT_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL}
+    env_file:
+      - .env
     ports:
       - "4000:4000"
     volumes:
