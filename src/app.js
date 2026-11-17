@@ -12,6 +12,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import { notFound, errorHandler } from "./middlewares/errorHandler.js";
 import pinoHttp from "pino-http";
 import logger from "./config/logger.js";
+import AppError from "./utils/AppError.js";
 
 dotenv.config();
 
@@ -34,7 +35,8 @@ app.use(
       if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
         callback(null, true);
       } else {
-        callback(new Error("CORS policy violation"));
+        // 403 explicite (et non 500) : origine refusée, pas une panne du serveur
+        callback(new AppError("Origine non autorisée.", 403, "CORS_REFUSE"));
       }
     },
     credentials: true,
