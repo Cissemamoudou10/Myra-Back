@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
@@ -7,12 +5,16 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      # Pas de mot de passe par défaut : le démarrage échoue si DB_PASSWORD n'est pas défini
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD doit être défini dans .env}
       POSTGRES_DB: ${DB_NAME:-myra_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Accessible uniquement depuis le VPS lui-même (l'API la joint via le réseau
+    # Docker, hôte "db"). Docker contourne le pare-feu ufw : ne jamais publier
+    # ce port sur 0.0.0.0.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   api:
     build: .
@@ -22,8 +24,9 @@ services:
       - db
     env_file:
       - .env
+    # Exposée seulement en local : le public passe par nginx (HTTPS)
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     volumes:
       - uploads_data:/app/src/uploads
 

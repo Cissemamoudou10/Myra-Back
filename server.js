@@ -12,8 +12,19 @@ dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 
+// Refuse de démarrer si une variable indispensable manque : mieux vaut
+// échouer tout de suite qu'au premier login admin (erreur 500).
+function verifierConfiguration() {
+  const manquantes = ["JWT_SECRET", "DB_NAME", "DB_USER"].filter((nom) => !process.env[nom]);
+  if (manquantes.length > 0) {
+    throw new Error(`Variables d'environnement manquantes : ${manquantes.join(", ")}`);
+  }
+}
+
 async function demarrer() {
   try {
+    verifierConfiguration();
+
     // 1) Vérifier la connexion à la base
     await testConnection();
 

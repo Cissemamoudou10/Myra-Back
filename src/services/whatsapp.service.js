@@ -10,6 +10,7 @@
 // ============================================================
 import dotenv from "dotenv";
 import logger from "../config/logger.js";
+import { masquerNumero } from "../utils/helpers.js";
 dotenv.config();
 
 const API_URL = process.env.WHATSAPP_API_URL;
@@ -46,11 +47,11 @@ async function envoyerTexte(numero, message) {
     });
     if (!res.ok) {
       const detail = await res.text();
-      logger.error({ status: res.status, detail, numero: numeroPropre }, "Échec envoi WhatsApp (Evolution API)");
+      logger.error({ status: res.status, detail, numero: masquerNumero(numeroPropre) }, "Échec envoi WhatsApp (Evolution API)");
       return false;
     }
     
-    logger.info({ numero: numeroPropre }, "Message WhatsApp envoyé avec succès");
+    logger.info({ numero: masquerNumero(numeroPropre) }, "Message WhatsApp envoyé avec succès");
     return true;
   } catch (error) {
     logger.error(error, "Erreur réseau lors de l'envoi WhatsApp");

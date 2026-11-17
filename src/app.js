@@ -18,6 +18,10 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+// Derrière nginx (1 proxy) : lire la vraie IP client dans X-Forwarded-For,
+// sinon toutes les requêtes semblent venir du proxy (limitation par IP inopérante).
+app.set("trust proxy", 1);
+
 // CORS : autorise le front
 app.use(
   cors({

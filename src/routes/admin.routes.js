@@ -8,6 +8,7 @@ import * as divers from "../controllers/divers.controller.js";
 import { referentiels } from "../config/referentiels.js";
 import { requireAuth } from "../middlewares/auth.js";
 import { upload } from "../middlewares/upload.js";
+import { limiteLogin } from "../middlewares/rateLimit.js";
 import * as dashboard from "../controllers/dashboard.controller.js";
 import * as article from "../controllers/article.controller.js";
 import * as kit from "../controllers/kit.controller.js";
@@ -16,7 +17,7 @@ import * as pos from "../controllers/pos.controller.js";
 const router = Router();
 
 // ---- Authentification (public) ----
-router.post("/login", divers.login);
+router.post("/login", limiteLogin, divers.login);
 
 // ---- Tout ce qui suit exige un token valide ----
 router.use(requireAuth);

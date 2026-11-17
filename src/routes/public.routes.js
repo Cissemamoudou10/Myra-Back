@@ -8,6 +8,7 @@ import * as divers from "../controllers/divers.controller.js";
 import * as article from "../controllers/article.controller.js";
 import * as kit from "../controllers/kit.controller.js";
 import { referentiels } from "../config/referentiels.js";
+import { limiteCommandes, limiteAvis } from "../middlewares/rateLimit.js";
 
 const router = Router();
 
@@ -22,10 +23,10 @@ for (const [chemin, { ctrl }] of Object.entries(referentiels)) {
 }
 
 // Commandes
-router.post("/commandes", commande.creer);
+router.post("/commandes", limiteCommandes, commande.creer);
 
 // Avis
-router.post("/avis", divers.soumettreAvis);
+router.post("/avis", limiteAvis, divers.soumettreAvis);
 router.get("/avis", divers.listerAvisPublies);
 
 // Recherche globale

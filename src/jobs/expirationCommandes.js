@@ -2,37 +2,44 @@
 //  Job planifié — expiration automatique des commandes
 //  Toutes les heures, repère les commandes encore « en attente
 //  de paiement » dont la date d'expiration est dépassée, et les
-//  bascule en « expirée ».
+//  bascule en « expirée » via la machine à états (ce qui restitue
+//  le stock et prévient le client).
 // ============================================================
 import cron from "node-cron";
 import { Op } from "sequelize";
 import db from "../models/index.js";
-import whatsapp from "../services/whatsapp.service.js";
+import { expirerCommande } from "../services/commande.service.js";
 import logger from "../config/logger.js";
 
 const { Commande, STATUTS } = db;
 
 export async function expirerCommandes() {
-  const maintenant = new Date();
   const commandes = await Commande.findAll({
+    attributes: ["id", "numero"],
     where: {
       statut: STATUTS.EN_ATTENTE,
-      expire_le: { [Op.lt]: maintenant },
+      expire_le: { [Op.lt]: new Date() },
     },
   });
 
-  for (const commande of commandes) {
-    commande.statut = STATUTS.EXPIREE;
-    await commande.save();
-    whatsapp.envoyerAnnulation(commande, "expirée").catch(() => {});
+  let expirees = 0;
+  for (const { id, numero } of commandes) {
+    try {
+      await expirerCommande(id);
+      expirees++;
+    } catch (error) {
+      // Ex. : l'admin a validé le paiement entre la recherche et la transition.
+      // On n'interrompt pas le traitement des autres commandes.
+      logger.warn({ commande: numero, err: error.message }, "Job expiration: commande ignorée");
+    }
   }
 
-  if (commandes.length > 0) {
-    logger.info({ count: commandes.length }, "Job expiration: commandes expirées traitées");
+  if (expirees > 0) {
+    logger.info({ count: expirees }, "Job expiration: commandes expirées traitées");
   } else {
     logger.debug("Job expiration: aucune commande à expirer");
   }
-  return commandes.length;
+  return expirees;
 }
 
 // Démarre la tâche planifiée (toutes les heures, à la minute 0)
