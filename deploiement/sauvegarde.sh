@@ -2,6 +2,7 @@
 # Sauvegarde quotidienne de Myra (cron de l'utilisateur deploy, 03 h 00) :
 # base PostgreSQL + photos produits uploadées. Garde 14 jours sur le serveur.
 set -euo pipefail
+umask 077  # données clientes : lisibles par deploy uniquement
 DOSSIER=/opt/backups/myra
 mkdir -p "$DOSSIER"
 HORODATAGE=$(date +%Y-%m-%d-%H%M)
