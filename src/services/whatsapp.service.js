@@ -13,48 +13,36 @@ import logger from "../config/logger.js";
 import { masquerNumero } from "../utils/helpers.js";
 dotenv.config();
 
-const API_URL = process.env.WHATSAPP_API_URL;
-const API_KEY = process.env.WHATSAPP_API_KEY;
-const INSTANCE = process.env.WHATSAPP_INSTANCE;
-const SARALI = process.env.SARALI_NUMBER;
+import { appelerEvolution, configEvolution, evolutionConfiguree, normaliserNumero } from "./evolution.client.js";
+
+import { getParametres } from "./parametre.service.js";
+
 const EXPIRATION_H = process.env.ORDER_EXPIRATION_HOURS || 48;
 const SITE_URL = process.env.FRONTEND_URL;
 
-// Envoi bas niveau d'un message texte via Evolution
+// Envoie un message texte ; lève une AppError en cas d'échec
+// (utilisé tel quel par le message de test de l'admin).
+export async function envoyerMessage(numero, message) {
+  const numeroPropre = normaliserNumero(numero);
+  await appelerEvolution("POST", `/message/sendText/${encodeURIComponent(configEvolution().instance)}`, {
+    number: numeroPropre,
+    text: message,
+  });
+  logger.info({ numero: masquerNumero(numeroPropre) }, "Message WhatsApp envoyé avec succès");
+}
+
+// Variante tolérante pour les séquences automatiques : n'interrompt jamais
+// le flux de commande, renvoie simplement false en cas d'échec.
 async function envoyerTexte(numero, message) {
-  if (!API_URL || !API_KEY || !INSTANCE) {
+  if (!evolutionConfiguree()) {
     logger.warn("WhatsApp non configuré (.env) — message non envoyé.");
     return false;
   }
-
-  // Formatage du numéro pour l'API Evolution (sans espaces, ni +, avec indicatif 223 par défaut)
-  let numeroPropre = (numero || "").replace(/\D/g, "");
-  if (numeroPropre.length === 8) {
-    numeroPropre = "223" + numeroPropre;
-  }
-
   try {
-    const res = await fetch(`${API_URL}/message/sendText/${INSTANCE}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: API_KEY,
-      },
-      body: JSON.stringify({
-        number: numeroPropre,
-        text: message,
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text();
-      logger.error({ status: res.status, detail, numero: masquerNumero(numeroPropre) }, "Échec envoi WhatsApp (Evolution API)");
-      return false;
-    }
-    
-    logger.info({ numero: masquerNumero(numeroPropre) }, "Message WhatsApp envoyé avec succès");
+    await envoyerMessage(numero, message);
     return true;
   } catch (error) {
-    logger.error(error, "Erreur réseau lors de l'envoi WhatsApp");
+    logger.error({ code: error.code, numero: masquerNumero(numero) }, "Échec envoi WhatsApp");
     return false;
   }
 }
@@ -62,16 +50,30 @@ async function envoyerTexte(numero, message) {
 // Formate un montant en FCFA
 const fcfa = (n) => new Intl.NumberFormat("fr-FR").format(n) + " FCFA";
 
+// Message de paiement, construit à partir des numéros réglés dans Admin → Paramètres
+export function messagePaiement(total, { orange_money_numero, sarali_numero }) {
+  const moyens = [
+    orange_money_numero && `• Orange Money : *${orange_money_numero}*`,
+    sarali_numero && `• Sarali : *${sarali_numero}*`,
+  ].filter(Boolean);
+
+  if (moyens.length === 0) {
+    return `💳 *Paiement*\n\nMontant à régler : ${fcfa(total)}.\nRépondez à ce message : nous vous indiquons comment payer.`;
+  }
+  return `💳 *Paiement*\n\nPour valider votre commande, envoyez ${fcfa(total)} via :\n\n${moyens.join("\n")}`;
+}
+
 // ---- Séquence 1 : à la création de la commande ----
 export async function envoyerCreationCommande(commande, lignes) {
   const recap = lignes
     .map((l) => `• ${l.quantite}× ${l.nom_produit} — ${fcfa(l.prix_unitaire * l.quantite)}`)
     .join("\n");
+  const parametres = await getParametres();
 
   const messages = [
     `Bonjour ${commande.prenom} 🌸\n\nMerci pour votre commande chez Myra Skin Care !\n\n*Commande ${commande.numero}*\n${recap}\n\n*Total : ${fcfa(commande.total)}*\nLivraison : ${commande.quartier}`,
-    `💳 *Paiement*\n\nPour valider votre commande, envoyez le montant de ${fcfa(commande.total)} via Sarali / Orange Money au numéro suivant :\n\n*${SARALI}*`,
-    `📸 Après paiement, envoyez-nous une *capture d'écran* du message de confirmation Sarali sur ce même numéro WhatsApp, afin que nous validions votre commande.`,
+    messagePaiement(commande.total, parametres),
+    `📸 Après paiement, envoyez-nous une *capture d'écran* de la confirmation de paiement sur ce même numéro WhatsApp, afin que nous validions votre commande.`,
     `⏳ Sans paiement sous *${EXPIRATION_H} heures*, votre commande sera automatiquement annulée.\n\nÀ très vite chez Myra Skin Care ✨`,
   ];
 
@@ -109,6 +111,7 @@ export async function envoyerAnnulation(commande, raison = "annulée") {
 }
 
 export default {
+  envoyerMessage,
   envoyerCreationCommande,
   envoyerConfirmationPaiement,
   envoyerAnnulation,

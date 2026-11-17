@@ -1,0 +1,26 @@
+# API Myra Skin Care — chargé par /opt/apps/caddy/Caddyfile (import sites/*.caddy).
+# Déposé et rechargé par myra_back/deploiement/deployer.sh.
+# Adresse sslip.io provisoire (même choix que Keitala) : à remplacer par un vrai domaine.
+#
+# Pas de clé de proxy ici, contrairement à Keitala : l'API est appelée directement par le
+# navigateur (site et admin) et sert les photos produits. Protection côté Express :
+# CORS limité au site, JWT sur /api/admin, limitation de débit sur les routes sensibles.
+myra-api.162-55-158-90.sslip.io {
+	# Photos produits limitées à 5 Mo par Express ; marge pour l'encodage multipart
+	request_body {
+		max_size 10MB
+	}
+
+	reverse_proxy myra-api:4000
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+	encode gzip
+	log {
+		output stdout
+		format console
+	}
+}

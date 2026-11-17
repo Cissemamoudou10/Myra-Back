@@ -13,6 +13,8 @@ import * as dashboard from "../controllers/dashboard.controller.js";
 import * as article from "../controllers/article.controller.js";
 import * as kit from "../controllers/kit.controller.js";
 import * as pos from "../controllers/pos.controller.js";
+import * as whatsapp from "../controllers/whatsapp.controller.js";
+import * as parametre from "../controllers/parametre.controller.js";
 
 const router = Router();
 
@@ -25,6 +27,10 @@ router.use(requireAuth);
 router.get("/me", divers.me);
 router.get("/dashboard/stats", dashboard.getStats);
 router.get("/statistiques", dashboard.getStatistiquesPeriode);
+
+// Paramètres de la boutique
+router.get("/parametres", parametre.getParametres);
+router.put("/parametres", parametre.modifierParametres);
 
 // Upload d'image (renvoie le chemin)
 router.post("/upload", upload.single("image"), (req, res) => {
@@ -70,6 +76,12 @@ router.patch("/commandes/:id/annuler", commande.annuler);
 
 // POS (Ventes directes)
 router.post("/pos/vente", pos.creerVentePOS);
+
+// WhatsApp (connexion du numéro de la boutique)
+router.get("/whatsapp/etat", whatsapp.getEtat);
+router.post("/whatsapp/connexion", whatsapp.connecter);
+router.post("/whatsapp/deconnexion", whatsapp.deconnecter);
+router.post("/whatsapp/test", whatsapp.envoyerTest);
 
 // Avis (modération)
 router.get("/avis", divers.listerTousAvis);

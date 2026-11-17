@@ -1,0 +1,53 @@
+# Myra Skin Care en production sur le VPS Hetzner : /opt/apps/myra/
+# - API et base sur un réseau interne ; la base n'est jamais publiée.
+# - L'API rejoint le réseau partagé « web » : Caddy la joint par son nom (myra-api)
+#   et elle y joint Evolution API (WhatsApp). Aucun port publié : seul Caddy est exposé.
+# - Secrets dans .env (généré sur le serveur par generer-env.sh, chmod 600).
+name: myra
+
+services:
+  db:
+    image: postgres:15.20-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: myra
+      POSTGRES_USER: myra
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+    volumes:
+      - myra_pgdata:/var/lib/postgresql/data
+    networks:
+      - interne
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myra -d myra"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./api
+    image: myra-api:courante
+    container_name: myra-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: myra
+      DB_USER: myra
+    volumes:
+      - myra_uploads:/app/src/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - interne
+      - web
+
+volumes:
+  myra_pgdata:
+  myra_uploads:
+
+networks:
+  interne:
+  web:
+    external: true

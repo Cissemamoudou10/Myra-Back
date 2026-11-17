@@ -18,6 +18,7 @@ import Article from "./Article.js";
 import Tag from "./Tag.js";
 import Kit from "./Kit.js";
 import KitProduit from "./KitProduit.js";
+import Parametre from "./Parametre.js";
 
 // ---- Relations un-à-plusieurs ----
 
@@ -141,6 +142,7 @@ const db = {
   Tag,
   Kit,
   KitProduit,
+  Parametre,
   // Constantes utiles
   STATUTS,
   STATUTS_AVIS,

@@ -104,6 +104,19 @@ describe("Service Commande (intégration)", { skip: !actif && "TEST_DB_NAME (se 
     assert.equal(await stockDe(p.id), 5);
   });
 
+  test("paramètres de paiement : enregistrés, vidés, et rejetés s'ils ne sont pas numériques", async () => {
+    const parametres = (await import("./parametre.service.js")).default;
+    let param = await parametres.modifierParametres({ orange_money_numero: " 76 61 29 34 ", sarali_numero: "7647" });
+    assert.equal(param.orange_money_numero, "76 61 29 34");
+    assert.equal(param.sarali_numero, "7647");
+
+    param = await parametres.modifierParametres({ sarali_numero: "" });
+    assert.equal(param.sarali_numero, null);
+    assert.equal(param.orange_money_numero, "76 61 29 34"); // champ absent : inchangé
+
+    await assert.rejects(parametres.modifierParametres({ sarali_numero: "abc" }), { code: "VALIDATION_ERROR" });
+  });
+
   test("la vente boutique calcule le total côté serveur", async () => {
     const p = await creerProduit({ slug: "nettoyant", prix: 4000, stock: 3 });
     const { commande } = await service.creerVenteBoutique({
