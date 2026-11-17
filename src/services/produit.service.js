@@ -17,7 +17,8 @@ const {
   PrincipeActif,
   Probleme,
   TypePeau,
-  Tag
+  Tag,
+  Parametre,
 } = db;
 
 // Inclusions standard pour renvoyer un produit complet
@@ -50,8 +51,26 @@ export async function listerProduits(query, { inclureInactifs = false } = {}) {
     if (query.prix_max) where.prix[Op.lte] = parseInt(query.prix_max, 10);
   }
 
-  // Filtres directs par clé étrangère
-  if (query.categorie) where.categorie_id = query.categorie;
+  // Filtre par catégorie : inclut aussi les sous-catégories (rubrique -> sous-rubriques)
+  if (query.categorie) {
+    const categorieId = parseInt(query.categorie, 10);
+    if (!Number.isNaN(categorieId)) {
+      const enfants = await Categorie.findAll({
+        where: { parent_id: categorieId },
+        attributes: ["id"],
+      });
+      where.categorie_id = { [Op.in]: [categorieId, ...enfants.map((c) => c.id)] };
+    }
+  }
+
+  // "Nouveautés" : produits créés dans les N derniers jours (seuil réglable dans Paramètres)
+  if (query.nouveautes === "true") {
+    const param = await Parametre.findByPk(1);
+    const dureeJours = param?.nouveaute_duree_jours ?? 60;
+    const seuil = new Date();
+    seuil.setDate(seuil.getDate() - dureeJours);
+    where.created_at = { [Op.gte]: seuil };
+  }
 
   // Filtres many-to-many et relations : on ajoute des inclusions filtrantes (par slug)
   const include = INCLUDES.map((inc) => ({ ...inc }));
@@ -72,7 +91,15 @@ export async function listerProduits(query, { inclureInactifs = false } = {}) {
   };
   
   if (query.probleme) applyM2M("problemes", query.probleme);
-  if (query.typepeau) applyM2M("types_peau", query.typepeau);
+  // TypePeau n'a pas de slug : filtre par id
+  if (query.typepeau) {
+    const typePeauId = parseInt(query.typepeau, 10);
+    if (!Number.isNaN(typePeauId)) {
+      const i = include.find((x) => x.as === "types_peau");
+      i.where = { id: typePeauId };
+      i.required = true;
+    }
+  }
   if (query.actif) applyM2M("principes_actifs", query.actif);
   if (query.tag) applyM2M("tags", query.tag);
 

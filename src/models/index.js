@@ -26,6 +26,10 @@ import Parametre from "./Parametre.js";
 Categorie.hasMany(Produit, { foreignKey: "categorie_id", as: "produits" });
 Produit.belongsTo(Categorie, { foreignKey: "categorie_id", as: "categorie" });
 
+// Une catégorie peut avoir des sous-catégories (menu public à 2 niveaux)
+Categorie.hasMany(Categorie, { foreignKey: "parent_id", as: "sousCategories" });
+Categorie.belongsTo(Categorie, { foreignKey: "parent_id", as: "parent" });
+
 // Une marque a plusieurs produits ; un produit a une marque
 Marque.hasMany(Produit, { foreignKey: "marque_id", as: "produits" });
 Produit.belongsTo(Marque, { foreignKey: "marque_id", as: "marque" });

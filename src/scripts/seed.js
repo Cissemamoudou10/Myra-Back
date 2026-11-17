@@ -24,9 +24,12 @@ async function seed() {
     await sequelize.sync({ force: true });
 
     // --- Référentiels ---
+    // "Visage" est une rubrique de premier niveau ; les 6 catégories
+    // ci-dessous en deviennent les sous-rubriques (menu automatique).
+    const visage = await Categorie.create({ nom: "Visage", slug: makeSlug("Visage"), ordre: 1 });
     const categories = await Categorie.bulkCreate(
       ["Nettoyant", "Sérum", "Crème", "Masque", "Toner", "Protection solaire"].map(
-        (nom) => ({ nom, slug: makeSlug(nom) })
+        (nom, i) => ({ nom, slug: makeSlug(nom), parent_id: visage.id, ordre: i })
       )
     );
 
@@ -40,14 +43,22 @@ async function seed() {
 
     const actifs = await PrincipeActif.bulkCreate(
       ["Centella", "Acide hyaluronique", "Niacinamide", "Ginseng", "Mucine d'escargot", "Thé vert"].map(
-        (nom) => ({ nom })
+        (nom) => ({ nom, slug: makeSlug(nom) })
       )
     );
 
+    // Photos Unsplash de démonstration — à remplacer par de vraies photos
+    // depuis l'admin (Caractéristiques > Problèmes > champ Image URL).
+    const U = (id) => `https://images.unsplash.com/photo-${id}?w=800&q=80`;
     const problemes = await Probleme.bulkCreate(
-      ["Déshydratation", "Teint terne", "Imperfections", "Rides", "Rougeurs", "Pores dilatés"].map(
-        (nom) => ({ nom })
-      )
+      [
+        { nom: "Hydratation & confort", image_url: U("1556228720-195a672e8a03") },
+        { nom: "Éclat & teint terne", image_url: U("1620916566398-39f1143ab7be") },
+        { nom: "Imperfections & pores", image_url: U("1612817288484-6f916006741a") },
+        { nom: "Anti-âge", image_url: U("1571781926291-c477ebfd024b") },
+        { nom: "Sensibilité & rougeurs", image_url: U("1608248543803-ba4f8c70ae0b") },
+        { nom: "Soin du regard", image_url: U("1556228578-8c89e6adf883") },
+      ].map((p) => ({ ...p, slug: makeSlug(p.nom) }))
     );
 
     const typesPeau = await TypePeau.bulkCreate(
@@ -65,7 +76,7 @@ async function seed() {
         categorie: "Sérum",
         marque: "Myra",
         actifs: ["Centella", "Niacinamide"],
-        problemes: ["Rougeurs", "Imperfections"],
+        problemes: ["Sensibilité & rougeurs", "Imperfections & pores"],
         peaux: ["Sensible", "Mixte"],
       },
       {
@@ -75,7 +86,7 @@ async function seed() {
         categorie: "Crème",
         marque: "Hanbit",
         actifs: ["Niacinamide"],
-        problemes: ["Teint terne", "Déshydratation"],
+        problemes: ["Éclat & teint terne", "Hydratation & confort"],
         peaux: ["Sèche", "Normale"],
       },
       {
@@ -85,7 +96,7 @@ async function seed() {
         categorie: "Toner",
         marque: "Seoul Dew",
         actifs: ["Ginseng"],
-        problemes: ["Rides", "Teint terne"],
+        problemes: ["Anti-âge", "Éclat & teint terne"],
         peaux: ["Tous types"],
       },
       {
@@ -95,7 +106,7 @@ async function seed() {
         categorie: "Crème",
         marque: "Pure Seoul",
         actifs: ["Mucine d'escargot", "Acide hyaluronique"],
-        problemes: ["Déshydratation", "Rides"],
+        problemes: ["Hydratation & confort", "Anti-âge"],
         peaux: ["Sèche", "Sensible"],
       },
       {
@@ -105,7 +116,7 @@ async function seed() {
         categorie: "Toner",
         marque: "Goyo",
         actifs: ["Acide hyaluronique"],
-        problemes: ["Déshydratation"],
+        problemes: ["Hydratation & confort"],
         peaux: ["Tous types"],
       },
       {
@@ -115,7 +126,7 @@ async function seed() {
         categorie: "Masque",
         marque: "Myra",
         actifs: ["Thé vert"],
-        problemes: ["Imperfections", "Pores dilatés"],
+        problemes: ["Imperfections & pores"],
         peaux: ["Grasse", "Mixte"],
       },
     ];
@@ -138,7 +149,7 @@ async function seed() {
     }
 
     console.log("✓ Données d'exemple insérées :");
-    console.log(`  - ${categories.length} catégories`);
+    console.log(`  - ${categories.length + 1} catégories`);
     console.log(`  - ${marques.length} marques`);
     console.log(`  - ${actifs.length} principes actifs`);
     console.log(`  - ${problemes.length} problèmes`);
