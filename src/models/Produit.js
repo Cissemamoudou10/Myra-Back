@@ -14,6 +14,10 @@ const Produit = sequelize.define(
     nom: { type: DataTypes.STRING, allowNull: false },
     slug: { type: DataTypes.STRING, allowNull: false, unique: true },
     description: { type: DataTypes.TEXT, allowNull: true },
+    // Format du produit tel qu'imprimé sur l'emballage (ex. « 150 ml », « 60 pads »)
+    contenance: { type: DataTypes.STRING(50), allowNull: true },
+    // Conseils d'utilisation affichés sur la fiche produit
+    mode_emploi: { type: DataTypes.TEXT, allowNull: true },
     // Prix en FCFA, entier (pas de centimes en franc CFA)
     prix: { type: DataTypes.INTEGER, allowNull: false },
     stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },

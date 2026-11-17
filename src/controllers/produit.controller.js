@@ -21,6 +21,11 @@ export const getParSlug = asyncHandler(async (req, res) => {
 });
 
 // ---- Admin ----
+export const getParIdAdmin = asyncHandler(async (req, res) => {
+  const produit = await produitService.getProduitParId(req.params.id);
+  res.json(produit);
+});
+
 export const listerAdmin = asyncHandler(async (req, res) => {
   const result = await produitService.listerProduits(req.query, {
     inclureInactifs: true,
@@ -71,6 +76,11 @@ function parseBody(req) {
   if (data.categorie_id) data.categorie_id = parseInt(data.categorie_id, 10);
   if (data.marque_id) data.marque_id = parseInt(data.marque_id, 10);
   if (data.actif !== undefined) data.actif = data.actif === "true" || data.actif === true;
+
+  // Champs texte optionnels : un champ vidé dans l'admin est enregistré à null
+  for (const champ of ["contenance", "mode_emploi"]) {
+    if (typeof data[champ] === "string") data[champ] = data[champ].trim() || null;
+  }
 
   return data;
 }

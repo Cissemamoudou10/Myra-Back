@@ -101,6 +101,15 @@ export async function getProduitParSlug(slug) {
   return produit;
 }
 
+// ---- Récupérer un produit par id (admin : formulaire d'édition) ----
+export async function getProduitParId(id) {
+  const produit = await Produit.findByPk(id, { include: INCLUDES });
+  if (!produit) {
+    throw new AppError("Produit introuvable.", 404, "PRODUCT_NOT_FOUND");
+  }
+  return produit;
+}
+
 // ---- Créer un produit ----
 export async function creerProduit(data) {
   const slug = makeSlug(data.nom);
@@ -146,6 +155,7 @@ async function appliquerRelations(produit, data) {
 export default {
   listerProduits,
   getProduitParSlug,
+  getProduitParId,
   creerProduit,
   modifierProduit,
   supprimerProduit,

@@ -40,6 +40,7 @@ router.post("/upload", upload.single("image"), (req, res) => {
 
 // Produits (CRUD complet, avec photo)
 router.get("/produits", produit.listerAdmin);
+router.get("/produits/:id", produit.getParIdAdmin);
 router.post("/produits", upload.single("photo"), produit.creer);
 router.put("/produits/:id", upload.single("photo"), produit.modifier);
 router.delete("/produits/:id", produit.supprimer);
