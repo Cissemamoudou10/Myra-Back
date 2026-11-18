@@ -117,6 +117,22 @@ describe("Service Commande (intégration)", { skip: !actif && "TEST_DB_NAME (se 
     await assert.rejects(parametres.modifierParametres({ sarali_numero: "abc" }), { code: "VALIDATION_ERROR" });
   });
 
+  test("recherche produits : accents, plusieurs mots, marque et actif", async () => {
+    const { listerProduits } = await import("./produit.service.js");
+    const marque = await db.Marque.create({ nom: "Anua", slug: "anua" });
+    const actif = await db.PrincipeActif.create({ nom: "Centella asiatica", slug: "centella-asiatica" });
+    const p = await creerProduit({ slug: "creme-apaisante", nom: "Crème apaisante", description: "Hydrate et apaise.", marque_id: marque.id });
+    await p.setPrincipes_actifs([actif.id]);
+    await creerProduit({ slug: "autre", nom: "Mousse nettoyante", description: "Nettoie." });
+
+    const total = async (q) => (await listerProduits({ q })).meta.total;
+    assert.equal(await total("creme"), 1);          // sans accent -> trouve « Crème »
+    assert.equal(await total("CRÈME hydrate"), 1);  // plusieurs mots, casse
+    assert.equal(await total("anua"), 1);           // par marque
+    assert.equal(await total("centella"), 1);       // par actif
+    assert.equal(await total("creme nettoie"), 0);  // tous les mots doivent correspondre
+  });
+
   test("la vente boutique calcule le total côté serveur", async () => {
     const p = await creerProduit({ slug: "nettoyant", prix: 4000, stock: 3 });
     const { commande } = await service.creerVenteBoutique({

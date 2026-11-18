@@ -8,6 +8,7 @@ import { Op } from "sequelize";
 import db from "../models/index.js";
 import { getPagination, buildPage } from "../utils/pagination.js";
 import { makeSlug } from "../utils/helpers.js";
+import { motsRecherche, conditionProduits } from "../utils/recherche.js";
 import AppError from "../utils/AppError.js";
 
 const {
@@ -41,8 +42,9 @@ export async function listerProduits(query, { inclureInactifs = false } = {}) {
   const where = {};
   if (!inclureInactifs) where.actif = true;
 
-  // Recherche textuelle sur le nom (insensible à la casse)
-  if (query.q) where.nom = { [Op.iLike]: `%${query.q}%` };
+  // Recherche : nom, description, marque, actifs ; insensible aux accents, plusieurs mots
+  const mots = motsRecherche(query.q);
+  if (mots.length) Object.assign(where, conditionProduits(mots));
 
   // Fourchette de prix
   if (query.prix_min || query.prix_max) {
